@@ -1,6 +1,7 @@
 name: nedo_halo
 description: NEDO HALO safety system
 publish_to: 'none'
+version: 1.0.0+1
 
 environment:
   sdk: '>=3.10.0 <4.0.0'
@@ -18,6 +19,7 @@ flutter:
 
   assets:
     - assets/images/nedo_halo_logo.png
+    - assets/images/halo_shieldLogoWht.png
 
   fonts:
     - family: Orbitron

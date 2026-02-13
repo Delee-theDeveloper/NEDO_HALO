@@ -7,7 +7,8 @@
 
 # The following line activates a set of recommended lints for Flutter apps,
 # packages, and plugins designed to encourage good coding practices.
-include: package:flutter_lints/flutter.yaml
+# `flutter_lints` is not listed in dev_dependencies for this project.
+# Keep analyzer config local so `flutter analyze` runs without external packages.
 
 linter:
   # The lint rules applied to this project can be customized in the
