@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'home_page.dart';
+import 'screens/halo_intro_screen.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -16,7 +16,7 @@ class _SplashPageState extends State<SplashPage> {
     Future.delayed(const Duration(seconds: 2), () {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const HomePage()),
+        MaterialPageRoute(builder: (_) => const HaloIntroScreen()),
       );
     });
   }

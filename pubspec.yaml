@@ -13,11 +13,13 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_launcher_icons: ^0.14.3
 
 flutter:
   uses-material-design: true
 
   assets:
+    - assets/images/halo_icon.png
     - assets/images/nedo_halo_logo.png
     - assets/images/halo_shieldLogoWht.png
 
@@ -25,3 +27,9 @@ flutter:
     - family: Orbitron
       fonts:
         - asset: assets/fonts/Orbitron-VariableFont_wght.ttf
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/images/halo_icon.png
+  remove_alpha_ios: true

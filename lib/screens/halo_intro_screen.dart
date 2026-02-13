@@ -119,6 +119,7 @@ class HaloIntroScreen extends StatelessWidget {
                     child: Text(
                       'Welcome to HALO',
                       style: TextStyle(
+                        fontFamily: 'Orbitron',
                         fontSize: 30,
                         fontWeight: FontWeight.w800,
                         color: Color(0xFF2563EB),
