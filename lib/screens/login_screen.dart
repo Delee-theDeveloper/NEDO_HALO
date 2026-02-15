@@ -1,7 +1,15 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:local_auth/error_codes.dart' as auth_error;
+import 'package:local_auth/local_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../core/config/app_preference_keys.dart';
 import 'accessibility_policy_screen.dart';
 import 'dashboard_router_screen.dart';
 import 'forgot_password_screen.dart';
@@ -19,17 +27,80 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final LocalAuthentication _localAuth = LocalAuthentication();
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+
   bool _obscurePassword = true;
   bool _isSigningIn = false;
+  bool _isBiometricSigningIn = false;
+  bool _rememberLogin = false;
+  bool _useFaceId = false;
+  bool _biometricAvailable = false;
+  String _biometricButtonText = 'Use Face ID';
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLoginPreferences();
+  }
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadLoginPreferences() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final bool remember = prefs.getBool(AppPreferenceKeys.rememberLogin) ?? false;
+    final bool faceId = prefs.getBool(AppPreferenceKeys.useFaceId) ?? false;
+
+    String storedEmail = '';
+    String storedPassword = '';
+    if (remember) {
+      storedEmail =
+          await _secureStorage.read(key: AppSecureStorageKeys.savedLoginEmail) ??
+          '';
+      storedPassword =
+          await _secureStorage.read(
+            key: AppSecureStorageKeys.savedLoginPassword,
+          ) ??
+          '';
+    }
+
+    final List<BiometricType> biometrics = await _availableBiometrics();
+    final bool biometricAvailable = biometrics.isNotEmpty;
+    String biometricText = 'Use Face ID';
+    if (biometrics.contains(BiometricType.face)) {
+      biometricText = 'Use Face ID';
+    } else if (biometrics.contains(BiometricType.fingerprint)) {
+      biometricText = 'Use Fingerprint';
+    } else if (biometricAvailable) {
+      biometricText = 'Use Biometrics';
+    } else if (!Platform.isIOS) {
+      biometricText = 'Use Biometrics';
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _rememberLogin = remember;
+      _useFaceId = faceId && biometricAvailable;
+      _biometricAvailable = biometricAvailable;
+      _biometricButtonText = biometricText;
+      if (storedEmail.isNotEmpty) {
+        _emailController.text = storedEmail;
+      }
+      if (storedPassword.isNotEmpty) {
+        _passwordController.text = storedPassword;
+      }
+    });
   }
 
   void _openForgotPassword() {
@@ -64,6 +135,165 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  Future<List<BiometricType>> _availableBiometrics() async {
+    try {
+      final bool isSupported = await _localAuth.isDeviceSupported();
+      final bool canCheck = await _localAuth.canCheckBiometrics;
+      if (!isSupported || !canCheck) {
+        return <BiometricType>[];
+      }
+      return _localAuth.getAvailableBiometrics();
+    } on PlatformException {
+      return <BiometricType>[];
+    }
+  }
+
+  Future<void> _setRememberLogin(bool value) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(AppPreferenceKeys.rememberLogin, value);
+
+    if (!value) {
+      await prefs.setBool(AppPreferenceKeys.useFaceId, false);
+      await _secureStorage.delete(key: AppSecureStorageKeys.savedLoginEmail);
+      await _secureStorage.delete(key: AppSecureStorageKeys.savedLoginPassword);
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _rememberLogin = value;
+      if (!value) {
+        _useFaceId = false;
+      }
+    });
+  }
+
+  Future<void> _setUseFaceId(bool value) async {
+    if (value && !_rememberLogin) {
+      await _setRememberLogin(true);
+    }
+
+    if (value && !_biometricAvailable) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Face ID / biometrics are not available on this device.'),
+        ),
+      );
+      return;
+    }
+
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(AppPreferenceKeys.useFaceId, value);
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _useFaceId = value;
+    });
+  }
+
+  Future<void> _persistRememberedCredentials({
+    required String email,
+    required String password,
+  }) async {
+    if (_rememberLogin) {
+      await _secureStorage.write(
+        key: AppSecureStorageKeys.savedLoginEmail,
+        value: email,
+      );
+      await _secureStorage.write(
+        key: AppSecureStorageKeys.savedLoginPassword,
+        value: password,
+      );
+      return;
+    }
+
+    await _secureStorage.delete(key: AppSecureStorageKeys.savedLoginEmail);
+    await _secureStorage.delete(key: AppSecureStorageKeys.savedLoginPassword);
+  }
+
+  Future<void> _signInWithFaceId() async {
+    if (_isSigningIn || _isBiometricSigningIn) {
+      return;
+    }
+
+    final String email =
+        await _secureStorage.read(key: AppSecureStorageKeys.savedLoginEmail) ??
+        '';
+    final String password =
+        await _secureStorage.read(key: AppSecureStorageKeys.savedLoginPassword) ??
+        '';
+
+    if (email.isEmpty || password.isEmpty) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'No saved login info found. Sign in once and enable Remember login info.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isBiometricSigningIn = true;
+    });
+
+    try {
+      final bool authenticated = await _localAuth.authenticate(
+        localizedReason: 'Use Face ID to sign in to NEDO HALO.',
+        options: const AuthenticationOptions(
+          biometricOnly: true,
+          stickyAuth: true,
+        ),
+      );
+
+      if (!authenticated) {
+        return;
+      }
+
+      _emailController.text = email;
+      _passwordController.text = password;
+      await _signInWithCredentials(email: email, password: password);
+    } on PlatformException catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      final String message = switch (e.code) {
+        auth_error.notAvailable =>
+          'Face ID is not available on this device.',
+        auth_error.notEnrolled =>
+          'Set up Face ID in Settings before using this option.',
+        auth_error.passcodeNotSet =>
+          'Set a device passcode before using Face ID.',
+        auth_error.lockedOut =>
+          'Face ID is temporarily locked. Unlock your device and try again.',
+        _ => 'Biometric sign in failed. Please try again.',
+      };
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isBiometricSigningIn = false;
+        });
+      }
+    }
+  }
+
   String _mapAuthCode(String code) {
     switch (code) {
       case 'invalid-email':
@@ -93,7 +323,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     switch ((widget.selectedRole ?? '').trim()) {
       case 'special_family':
-        return 'Special Families';
+        return 'Family & Friends';
       case 'community_advocate':
         return 'Connected Community';
       case 'first_responder':
@@ -189,6 +419,13 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
+    await _signInWithCredentials(email: email, password: password);
+  }
+
+  Future<void> _signInWithCredentials({
+    required String email,
+    required String password,
+  }) async {
     setState(() {
       _isSigningIn = true;
     });
@@ -200,6 +437,20 @@ class _LoginScreenState extends State<LoginScreen> {
       final User? user = credential.user;
       if (user != null) {
         await _ensureUserDoc(user);
+        await _persistRememberedCredentials(email: email, password: password);
+        final SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setBool(AppPreferenceKeys.hasSeenOnboarding, true);
+        final String selectedRole = (widget.selectedRole ?? '').trim();
+        final String selectedRoleLabel = _resolvedRoleLabel().trim();
+        if (selectedRole.isNotEmpty) {
+          await prefs.setString(AppPreferenceKeys.selectedRole, selectedRole);
+        }
+        if (selectedRoleLabel.isNotEmpty) {
+          await prefs.setString(
+            AppPreferenceKeys.selectedRoleLabel,
+            selectedRoleLabel,
+          );
+        }
       } else {
         if (!mounted) {
           return;
@@ -466,11 +717,126 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ),
                                     ),
                                   ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: CheckboxListTile(
+                                          dense: true,
+                                          contentPadding: EdgeInsets.zero,
+                                          controlAffinity:
+                                              ListTileControlAffinity.leading,
+                                          value: _rememberLogin,
+                                          onChanged: (_isSigningIn ||
+                                                  _isBiometricSigningIn)
+                                              ? null
+                                              : (bool? value) =>
+                                                    _setRememberLogin(
+                                                      value ?? false,
+                                                    ),
+                                          title: const Text(
+                                            'Remember login info',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Color(0xFF344054),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: CheckboxListTile(
+                                          dense: true,
+                                          contentPadding: EdgeInsets.zero,
+                                          controlAffinity:
+                                              ListTileControlAffinity.leading,
+                                          value:
+                                              _useFaceId && _biometricAvailable,
+                                          onChanged: (_isSigningIn ||
+                                                  _isBiometricSigningIn)
+                                              ? null
+                                              : (bool? value) =>
+                                                    _setUseFaceId(
+                                                      value ?? false,
+                                                    ),
+                                          title: Text(
+                                            _biometricButtonText,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: _biometricAvailable
+                                                  ? const Color(0xFF344054)
+                                                  : const Color(0xFF98A2B3),
+                                            ),
+                                          ),
+                                          subtitle: _biometricAvailable
+                                              ? null
+                                              : const Text(
+                                                  'Not available on this device',
+                                                  style: TextStyle(
+                                                    fontSize: 11,
+                                                    color: Color(0xFF98A2B3),
+                                                  ),
+                                                ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                   const SizedBox(height: 14),
+                                  if (_useFaceId &&
+                                      _rememberLogin &&
+                                      _biometricAvailable) ...[
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: OutlinedButton.icon(
+                                        onPressed: (_isSigningIn ||
+                                                _isBiometricSigningIn)
+                                            ? null
+                                            : _signInWithFaceId,
+                                        icon: Icon(
+                                          Platform.isIOS
+                                              ? Icons.face_6_outlined
+                                              : Icons.fingerprint,
+                                          size: 18,
+                                        ),
+                                        label: Text(
+                                          _isBiometricSigningIn
+                                              ? 'Verifying...'
+                                              : _biometricButtonText,
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                        style: OutlinedButton.styleFrom(
+                                          side: const BorderSide(
+                                            color: Color(0xFFBFDBFE),
+                                          ),
+                                          foregroundColor: const Color(
+                                            0xFF1D4ED8,
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 11,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                  ],
                                   SizedBox(
                                     width: double.infinity,
                                     child: ElevatedButton(
-                                      onPressed: _isSigningIn ? null : _signIn,
+                                      onPressed: (_isSigningIn ||
+                                              _isBiometricSigningIn)
+                                          ? null
+                                          : _signIn,
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: const Color(
                                           0xFF2563EB,
@@ -506,7 +872,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                   Center(
                                     child: TextButton(
-                                      onPressed: _isSigningIn
+                                      onPressed: (_isSigningIn ||
+                                              _isBiometricSigningIn)
                                           ? null
                                           : _openForgotPassword,
                                       child: const Text(

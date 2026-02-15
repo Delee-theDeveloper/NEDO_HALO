@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../core/config/app_preference_keys.dart';
 import 'community_signup_screen.dart';
 import 'help_choosing_screen.dart';
 import 'login_screen.dart';
@@ -22,7 +24,7 @@ class _HaloIntroScreenState extends State<HaloIntroScreen> {
 
   final List<_SlideSpec> _slides = const [
     _SlideSpec(
-      title: 'Welcome to HALO',
+      title: 'HALO Network Overview',
       subtitle:
           'A simple way to protect loved ones with\npersonalized safety workflows.',
       stepLabel: 'Getting Started',
@@ -34,7 +36,8 @@ class _HaloIntroScreenState extends State<HaloIntroScreen> {
       cards: [
         _SlideCardSpec(
           title: 'Family & Friends',
-          description: 'Support tools built for special needs families',
+          description:
+              'Guardians are trusted family members and close friends authorized to oversee and respond when a Halo needs support.',
           icon: Icons.family_restroom,
           iconBgColor: Color(0xFFE3ECFF),
           iconColor: Color(0xFF2563EB),
@@ -45,7 +48,7 @@ class _HaloIntroScreenState extends State<HaloIntroScreen> {
         _SlideCardSpec(
           title: 'Connected Community',
           description:
-              'Connected community advocate members who support the app',
+              'Certified Advocates are verified and trained community members who are authorized to provide temporary assistance during an active Halo emergency.',
           icon: Icons.people,
           iconBgColor: Color(0xFFDDF3FF),
           iconColor: Color(0xFF0EA5E9),
@@ -218,7 +221,18 @@ class _HaloIntroScreenState extends State<HaloIntroScreen> {
       _selectedRoleLabel = label;
     });
 
+    _persistRoleSelection(role: role, label: label);
     _startRoleSignupAndLoginFlow(role: role, label: label);
+  }
+
+  Future<void> _persistRoleSelection({
+    required String role,
+    required String label,
+  }) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(AppPreferenceKeys.hasSeenOnboarding, true);
+    await prefs.setString(AppPreferenceKeys.selectedRole, role);
+    await prefs.setString(AppPreferenceKeys.selectedRoleLabel, label);
   }
 
   Future<void> _startRoleSignupAndLoginFlow({

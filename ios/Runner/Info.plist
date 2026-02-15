@@ -30,6 +30,8 @@
 	<string>NEDO HALO uses photos so families and responders can identify contacts and loved ones.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>NEDO HALO may save selected profile photos for safety records.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>NEDO HALO uses Face ID to securely sign in to your account.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

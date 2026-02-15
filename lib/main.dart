@@ -1,7 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'core/theme.dart'; // EXACT
-import 'screens/special_family_signup_screen.dart';
+import 'splash_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,7 +23,7 @@ class NedoHaloApp extends StatelessWidget {
       title: 'NEDO HALO',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.myHaloTheme,
-      home: const SpecialFamilySignupScreen(),
+      home: const SplashPage(),
     );
   }
 }

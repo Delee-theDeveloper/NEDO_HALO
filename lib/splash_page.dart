@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'core/config/app_preference_keys.dart';
 import 'screens/halo_intro_screen.dart';
+import 'screens/login_screen.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -12,17 +16,39 @@ class _SplashPageState extends State<SplashPage> {
   @override
   void initState() {
     super.initState();
+    _routeFromSplash();
+  }
 
-    Future.delayed(const Duration(seconds: 2), () {
-      if (!mounted) {
-        return;
-      }
+  Future<void> _routeFromSplash() async {
+    await Future<void>.delayed(const Duration(seconds: 2));
 
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const HaloIntroScreen()),
-      );
-    });
+    if (!mounted) {
+      return;
+    }
+
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final bool hasSeenOnboarding =
+        prefs.getBool(AppPreferenceKeys.hasSeenOnboarding) ?? false;
+    final String selectedRole =
+        prefs.getString(AppPreferenceKeys.selectedRole)?.trim() ?? '';
+    final String selectedRoleLabel =
+        prefs.getString(AppPreferenceKeys.selectedRoleLabel)?.trim() ?? '';
+
+    if (!mounted) {
+      return;
+    }
+
+    final Widget destination = hasSeenOnboarding
+        ? LoginScreen(
+            selectedRole: selectedRole.isEmpty ? null : selectedRole,
+            selectedRoleLabel:
+                selectedRoleLabel.isEmpty ? null : selectedRoleLabel,
+          )
+        : const HaloIntroScreen();
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(builder: (_) => destination),
+    );
   }
 
   @override
