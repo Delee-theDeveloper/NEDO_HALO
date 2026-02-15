@@ -76,7 +76,7 @@ class HelpChoosingScreen extends StatelessWidget {
                     child: Column(
                       children: const [
                         _RoleGuideCard(
-                          title: 'Caregiver',
+                          title: 'Care Partners',
                           subtitle:
                               'Best when you support someone else day to day.',
                           icon: Icons.favorite,
@@ -90,16 +90,17 @@ class HelpChoosingScreen extends StatelessWidget {
                         ),
                         SizedBox(height: 12),
                         _RoleGuideCard(
-                          title: 'Individual',
+                          title: 'Community Advocates',
                           subtitle:
-                              'Best when the app supports your own routines.',
+                              'Best for trusted advocates supporting special needs families.',
                           icon: Icons.person,
                           accentColor: Color(0xFF0EA5E9),
                           iconBgColor: Color(0xFFDDF3FF),
                           points: [
-                            'You are the person using alerts and communication tools.',
+                            'Special needs individuals with trusted community access.',
+                            'Close family/friends to special needs families.',
+                            'You can advocate, coordinate updates, and share context.',
                             'You want quick access to emergency actions.',
-                            'You prefer a simpler, personal dashboard.',
                           ],
                         ),
                         SizedBox(height: 12),

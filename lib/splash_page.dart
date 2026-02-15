@@ -14,7 +14,11 @@ class _SplashPageState extends State<SplashPage> {
     super.initState();
 
     Future.delayed(const Duration(seconds: 2), () {
-      Navigator.pushReplacement(
+      if (!mounted) {
+        return;
+      }
+
+      Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => const HaloIntroScreen()),
       );

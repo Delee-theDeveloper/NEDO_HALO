@@ -1,4 +1,4 @@
-package com.example.nedo_halo
+package com.nedotech.nedohalo
 
 import io.flutter.embedding.android.FlutterActivity
 
