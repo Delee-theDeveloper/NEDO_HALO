@@ -1,7 +1,6 @@
-import 'dart:io';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -56,14 +55,17 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _loadLoginPreferences() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final bool remember = prefs.getBool(AppPreferenceKeys.rememberLogin) ?? false;
+    final bool remember =
+        prefs.getBool(AppPreferenceKeys.rememberLogin) ?? false;
     final bool faceId = prefs.getBool(AppPreferenceKeys.useFaceId) ?? false;
 
     String storedEmail = '';
     String storedPassword = '';
     if (remember) {
       storedEmail =
-          await _secureStorage.read(key: AppSecureStorageKeys.savedLoginEmail) ??
+          await _secureStorage.read(
+            key: AppSecureStorageKeys.savedLoginEmail,
+          ) ??
           '';
       storedPassword =
           await _secureStorage.read(
@@ -81,7 +83,7 @@ class _LoginScreenState extends State<LoginScreen> {
       biometricText = 'Use Fingerprint';
     } else if (biometricAvailable) {
       biometricText = 'Use Biometrics';
-    } else if (!Platform.isIOS) {
+    } else if (defaultTargetPlatform != TargetPlatform.iOS) {
       biometricText = 'Use Biometrics';
     }
 
@@ -181,7 +183,9 @@ class _LoginScreenState extends State<LoginScreen> {
       }
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Face ID / biometrics are not available on this device.'),
+          content: Text(
+            'Face ID / biometrics are not available on this device.',
+          ),
         ),
       );
       return;
@@ -228,7 +232,9 @@ class _LoginScreenState extends State<LoginScreen> {
         await _secureStorage.read(key: AppSecureStorageKeys.savedLoginEmail) ??
         '';
     final String password =
-        await _secureStorage.read(key: AppSecureStorageKeys.savedLoginPassword) ??
+        await _secureStorage.read(
+          key: AppSecureStorageKeys.savedLoginPassword,
+        ) ??
         '';
 
     if (email.isEmpty || password.isEmpty) {
@@ -271,8 +277,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       final String message = switch (e.code) {
-        auth_error.notAvailable =>
-          'Face ID is not available on this device.',
+        auth_error.notAvailable => 'Face ID is not available on this device.',
         auth_error.notEnrolled =>
           'Set up Face ID in Settings before using this option.',
         auth_error.passcodeNotSet =>
@@ -282,9 +287,9 @@ class _LoginScreenState extends State<LoginScreen> {
         _ => 'Biometric sign in failed. Please try again.',
       };
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } finally {
       if (mounted) {
         setState(() {
@@ -509,7 +514,9 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
-            final double keyboardInset = MediaQuery.of(context).viewInsets.bottom;
+            final double keyboardInset = MediaQuery.of(
+              context,
+            ).viewInsets.bottom;
 
             return Stack(
               children: [
@@ -727,7 +734,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                           controlAffinity:
                                               ListTileControlAffinity.leading,
                                           value: _rememberLogin,
-                                          onChanged: (_isSigningIn ||
+                                          onChanged:
+                                              (_isSigningIn ||
                                                   _isBiometricSigningIn)
                                               ? null
                                               : (bool? value) =>
@@ -755,13 +763,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                               ListTileControlAffinity.leading,
                                           value:
                                               _useFaceId && _biometricAvailable,
-                                          onChanged: (_isSigningIn ||
+                                          onChanged:
+                                              (_isSigningIn ||
                                                   _isBiometricSigningIn)
                                               ? null
-                                              : (bool? value) =>
-                                                    _setUseFaceId(
-                                                      value ?? false,
-                                                    ),
+                                              : (bool? value) => _setUseFaceId(
+                                                  value ?? false,
+                                                ),
                                           title: Text(
                                             _biometricButtonText,
                                             style: TextStyle(
@@ -791,12 +799,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                     SizedBox(
                                       width: double.infinity,
                                       child: OutlinedButton.icon(
-                                        onPressed: (_isSigningIn ||
+                                        onPressed:
+                                            (_isSigningIn ||
                                                 _isBiometricSigningIn)
                                             ? null
                                             : _signInWithFaceId,
                                         icon: Icon(
-                                          Platform.isIOS
+                                          Theme.of(context).platform ==
+                                                  TargetPlatform.iOS
                                               ? Icons.face_6_outlined
                                               : Icons.fingerprint,
                                           size: 18,
@@ -833,7 +843,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                   SizedBox(
                                     width: double.infinity,
                                     child: ElevatedButton(
-                                      onPressed: (_isSigningIn ||
+                                      onPressed:
+                                          (_isSigningIn ||
                                               _isBiometricSigningIn)
                                           ? null
                                           : _signIn,
@@ -872,7 +883,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                   Center(
                                     child: TextButton(
-                                      onPressed: (_isSigningIn ||
+                                      onPressed:
+                                          (_isSigningIn ||
                                               _isBiometricSigningIn)
                                           ? null
                                           : _openForgotPassword,

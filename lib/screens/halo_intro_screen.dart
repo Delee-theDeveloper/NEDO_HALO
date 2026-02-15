@@ -24,7 +24,7 @@ class _HaloIntroScreenState extends State<HaloIntroScreen> {
 
   final List<_SlideSpec> _slides = const [
     _SlideSpec(
-      title: 'HALO Network Overview',
+      title: 'Welcome to HALO',
       subtitle:
           'A simple way to protect loved ones with\npersonalized safety workflows.',
       stepLabel: 'Getting Started',
@@ -274,7 +274,8 @@ class _HaloIntroScreenState extends State<HaloIntroScreen> {
       case 'special_family':
         final bool? saved = await Navigator.of(context).push<bool>(
           MaterialPageRoute<bool>(
-            builder: (BuildContext context) => const SpecialFamilySignupScreen(),
+            builder: (BuildContext context) =>
+                const SpecialFamilySignupScreen(),
           ),
         );
         return saved == true;
@@ -651,36 +652,33 @@ class _OnboardingSlide extends StatelessWidget {
         _StepProgress(currentStep: currentStep, totalSteps: totalSteps),
         const SizedBox(height: 14),
         Expanded(
-          child: Column(
-            children: [
-              for (int i = 0; i < slide.cards.length; i++) ...[
-                Expanded(
-                  child: _RoleCard(
-                    title: slide.cards[i].title,
-                    description: slide.cards[i].description,
-                    icon: slide.cards[i].icon,
-                    iconBgColor: slide.cards[i].iconBgColor,
-                    iconColor: slide.cards[i].iconColor,
-                    tags: slide.cards[i].tags,
-                    tagColor: slide.cards[i].tagColor,
-                    phase: slide.cards[i].phase,
-                    onTap:
-                        slide.cards[i].roleValue != null &&
-                            onRoleSelected != null
-                        ? () => onRoleSelected!(
-                            slide.cards[i].roleValue!,
-                            slide.cards[i].title,
-                          )
-                        : null,
-                    isSelected:
-                        slide.cards[i].roleValue != null &&
-                        onRoleSelected != null &&
-                        selectedRole == slide.cards[i].roleValue,
-                  ),
-                ),
-                if (i < slide.cards.length - 1) const SizedBox(height: 12),
-              ],
-            ],
+          child: ListView.separated(
+            padding: EdgeInsets.zero,
+            itemCount: slide.cards.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (BuildContext context, int i) {
+              return _RoleCard(
+                title: slide.cards[i].title,
+                description: slide.cards[i].description,
+                icon: slide.cards[i].icon,
+                iconBgColor: slide.cards[i].iconBgColor,
+                iconColor: slide.cards[i].iconColor,
+                tags: slide.cards[i].tags,
+                tagColor: slide.cards[i].tagColor,
+                phase: slide.cards[i].phase,
+                onTap:
+                    slide.cards[i].roleValue != null && onRoleSelected != null
+                    ? () => onRoleSelected!(
+                        slide.cards[i].roleValue!,
+                        slide.cards[i].title,
+                      )
+                    : null,
+                isSelected:
+                    slide.cards[i].roleValue != null &&
+                    onRoleSelected != null &&
+                    selectedRole == slide.cards[i].roleValue,
+              );
+            },
           ),
         ),
         const SizedBox(height: 12),
@@ -1241,7 +1239,7 @@ class _RoleCard extends StatelessWidget {
                     color: Color(0xFF475467),
                   ),
                 ),
-                const Spacer(),
+                const SizedBox(height: 8),
                 Wrap(
                   spacing: 6,
                   runSpacing: 6,

@@ -41,14 +41,15 @@ class _SplashPageState extends State<SplashPage> {
     final Widget destination = hasSeenOnboarding
         ? LoginScreen(
             selectedRole: selectedRole.isEmpty ? null : selectedRole,
-            selectedRoleLabel:
-                selectedRoleLabel.isEmpty ? null : selectedRoleLabel,
+            selectedRoleLabel: selectedRoleLabel.isEmpty
+                ? null
+                : selectedRoleLabel,
           )
         : const HaloIntroScreen();
 
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(builder: (_) => destination),
-    );
+    Navigator.of(
+      context,
+    ).pushReplacement(MaterialPageRoute<void>(builder: (_) => destination));
   }
 
   @override
